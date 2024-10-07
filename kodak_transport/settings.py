@@ -31,15 +31,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-qm1jgrdbbbps30_$f(v1+uz-r@rkdg9!n(=61sz)%#mdizi#mg'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-if ENVIRONMENT == 'development':
-    DEBUG = True
-else:
-    DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost', 'kodaklogistics.up.railway.app']
-                 
-INTERNAL_IPS = ('127.0.0.1',
-                'localhost:8080')
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -113,26 +107,12 @@ WSGI_APPLICATION = 'kodak_transport.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-POSTGRES_LOCALLY = env.bool('POSTGRES_LOCALLY', default=False)
-
-# Database settings
-if ENVIRONMENT == 'production' or POSTGRES_LOCALLY:
-    DATABASES = {
-        'default': dj_database_url.parse(env('DATABASE_URL'))
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-    print("Using production/POSTGRES_LOCALLY database:", DATABASES['default'])
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': env('DB_NAME'),
-            'USER': env('DB_USER'),
-            'PASSWORD': env('DB_PASSWORD'),
-            'HOST': env('DB_HOST'),
-            'PORT': env('DB_PORT'),
-        }
-    }
-    print("Using development database:", DATABASES['default'])
+}
 
 
 # Password validation
@@ -169,20 +149,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT =os.path.join(BASE_DIR, 'staticfiles')
-
-STATIC_URL = '/static/'
-
-STORAGES = {
-    # ...
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
