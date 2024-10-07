@@ -36,9 +36,9 @@ if ENVIRONMENT == 'development':
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost', 'https://kodaklogistics.up.railway.app/']
+ALLOWED_HOSTS = ['127.0.0.1','localhost', 'kodaklogistics.up.railway.app/']
 
-CSRF_TRUSTED_ORIGINS = ['https://https://kodaklogistics.up.railway.app/']
+CSRF_TRUSTED_ORIGINS = ['https://kodaklogistics.up.railway.app/']
 
 INTERNAL_IPS = ('127.0.0.1',
                 'localhost:8080')
