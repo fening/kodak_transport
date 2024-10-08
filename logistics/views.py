@@ -90,12 +90,27 @@ class DashboardView(APIView):
         user = request.user
         records = TransportRecord.objects.filter(user=user)
 
+        # Fetch date filter parameters
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        # Apply date filtering if both start and end dates are provided
+        if start_date and end_date:
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                records = records.filter(date__range=(start_date, end_date))
+            except ValueError:
+                return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Calculate the summary data
         total_miles = records.aggregate(Sum('miles'))['miles__sum'] or 0
         total_pay = records.aggregate(Sum('pay'))['pay__sum'] or 0
         record_count = records.count()
 
         recent_records = records.order_by('-date')[:5].values('id', 'date', 'po_number', 'miles', 'pay')
 
+        # Generate monthly data
         six_months_ago = datetime.now() - timedelta(days=180)
         monthly_data = records.filter(date__gte=six_months_ago) \
             .annotate(month=TruncMonth('date')) \
