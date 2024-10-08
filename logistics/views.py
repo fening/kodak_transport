@@ -124,7 +124,10 @@ class NotificationList(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Only return unread notifications
+        # Check for a query parameter to filter read/unread notifications
+        show_all = self.request.query_params.get('show_all', 'false').lower() == 'true'
+        if show_all:
+            return Notification.objects.filter(user=self.request.user)
         return Notification.objects.filter(user=self.request.user, is_read=False)
 
 class MarkNotificationAsRead(APIView):
