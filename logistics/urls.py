@@ -10,4 +10,6 @@ urlpatterns = [
     path('records/add/', views.AddTransportRecord.as_view(), name='add-record'),
     path('records/<int:pk>/', views.TransportRecordDetail.as_view(), name='record-detail'),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    path('notifications/', views.NotificationList.as_view(), name='notification-list'),
+    path('notifications/<int:pk>/read/', views.MarkNotificationAsRead.as_view(), name='mark-notification-read'),
 ]

@@ -1,10 +1,18 @@
-from rest_framework import status
+from rest_framework import status, generics, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserSerializer
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
+from datetime import datetime, timedelta
+import logging
+from .serializers import UserSerializer, TransportRecordSerializer, NotificationSerializer
+from .models import TransportRecord, Notification
+
+logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -24,17 +32,6 @@ def login_user(request):
             }
         })
     return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserSerializer
-import logging
-
-logger = logging.getLogger(__name__)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -57,13 +54,6 @@ def register_user(request):
     logger.error(f"Registration failed. Errors: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-from rest_framework import generics, permissions, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from .models import TransportRecord
-from .serializers import TransportRecordSerializer
-
 class TransportRecordList(generics.ListAPIView):
     serializer_class = TransportRecordSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -77,7 +67,12 @@ class AddTransportRecord(APIView):
     def post(self, request):
         serializer = TransportRecordSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            record = serializer.save()
+            create_notification(
+                user=request.user,
+                message=f"New record added: {record.po_number}",
+                link=f"/records/{record.id}"
+            )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -87,14 +82,6 @@ class TransportRecordDetail(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return TransportRecord.objects.filter(user=self.request.user)
-    
-    from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Sum
-from django.db.models.functions import TruncMonth
-from .models import TransportRecord
-from datetime import datetime, timedelta
 
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
@@ -103,15 +90,12 @@ class DashboardView(APIView):
         user = request.user
         records = TransportRecord.objects.filter(user=user)
 
-        # Calculate summary statistics
         total_miles = records.aggregate(Sum('miles'))['miles__sum'] or 0
         total_pay = records.aggregate(Sum('pay'))['pay__sum'] or 0
         record_count = records.count()
 
-        # Get recent records
         recent_records = records.order_by('-date')[:5].values('id', 'date', 'po_number', 'miles', 'pay')
 
-        # Calculate monthly data
         six_months_ago = datetime.now() - timedelta(days=180)
         monthly_data = records.filter(date__gte=six_months_ago) \
             .annotate(month=TruncMonth('date')) \
@@ -134,3 +118,25 @@ class DashboardView(APIView):
             'recentRecords': recent_records,
             'monthlyData': monthly_data
         })
+
+class NotificationList(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+class MarkNotificationAsRead(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            notification = Notification.objects.get(pk=pk, user=request.user)
+            notification.is_read = True
+            notification.save()
+            return Response({"status": "success"})
+        except Notification.DoesNotExist:
+            return Response({"status": "error", "message": "Notification not found"}, status=404)
+
+def create_notification(user, message, link):
+    Notification.objects.create(user=user, message=message, link=link)
