@@ -36,7 +36,7 @@ if ENVIRONMENT == 'development':
 else:
     DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost', 'kodaklogistics.up.railway.app', 'kodaklogisticsapi.up.railway.app']
+ALLOWED_HOSTS = ['127.0.0.1','localhost', 'kodaklogistics.up.railway.app', 'kodaklogisticsapi.up.railway.app', ".awsapprunner.com"]
 
 CSRF_TRUSTED_ORIGINS = ['https://kodaklogistics.up.railway.app','https://kodaklogisticsapi.up.railway.app']
 
@@ -171,7 +171,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
