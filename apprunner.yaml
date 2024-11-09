@@ -9,13 +9,6 @@ run:
   command: sh startup.sh
   network:
     port: 8000
-  environment:
-    ENVIRONMENT: production
-    POSTGRES_LOCALLY: "True"
-    DB_NAME: kodak
-    DB_USER: postgres
-    DB_HOST: localhost
-    DB_PORT: "5432"
   secrets:
     - name: secrets
       value-from: "arn:aws:secretsmanager:us-east-2:148761665411:secret:secrets-5Yo0kf"
